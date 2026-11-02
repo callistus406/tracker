@@ -50,9 +50,9 @@ export function TargetItem({ item, overdue, moveLabel, onToggle, onStart, onEdit
 
       <div className="min-w-0 flex-1">
         <button type="button" onClick={onEdit} className="block w-full text-left">
-          <span className={`block break-words ${done ? 'text-muted line-through' : 'font-medium'}`}>{item.title}</span>
+          <span className={`block wrap-anywhere ${done ? 'text-muted line-through' : 'font-medium'}`}>{item.title}</span>
           {item.description && (
-            <span className="mt-0.5 block text-sm break-words whitespace-pre-line text-muted">{item.description}</span>
+            <span className="mt-0.5 block text-sm wrap-anywhere whitespace-pre-line text-muted">{item.description}</span>
           )}
         </button>
 
