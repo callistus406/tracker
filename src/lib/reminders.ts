@@ -47,6 +47,7 @@ export const anyEnabled = (s: ReminderSettings) => s.morning.on || s.evening.on 
 
 const minutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
 const inWindow = (t: string, nowMin: number) => nowMin >= minutes(t) && nowMin - minutes(t) <= WINDOW_MIN
+const short = (s: string, n = 60) => (s.length > n ? `${s.slice(0, n - 1)}…` : s)
 const plural = (n: number, word: string) => `${n} ${word}${n === 1 ? '' : 's'}`
 
 export interface Due {
@@ -67,7 +68,7 @@ export function dueReminders(now = new Date()): Due[] {
   const open = db.daily.filter((t) => t.date === day && t.status !== 'completed')
   for (const t of open) {
     if (t.remindAt && inWindow(t.remindAt, nowMin)) {
-      out.push({ id: `t:${t._id}:${t.remindAt}`, title: t.title, body: `Reminder for ${t.remindAt}`, url: '/daily/' })
+      out.push({ id: `t:${t._id}:${t.remindAt}`, title: short(t.title), body: `Reminder for ${t.remindAt}`, url: '/daily/' })
     }
   }
 
@@ -75,7 +76,7 @@ export function dueReminders(now = new Date()): Due[] {
     out.push({
       id: `morning:${day}`,
       title: 'Good morning',
-      body: open.length ? `${plural(open.length, 'target')} for today: ${open[0].title}${open.length > 1 ? '…' : ''}` : 'Nothing planned yet. Add today’s targets.',
+      body: open.length ? `${plural(open.length, 'target')} for today: ${short(open[0].title)}${open.length > 1 ? '…' : ''}` : 'Nothing planned yet. Add today’s targets.',
       url: '/daily/',
     })
   }
