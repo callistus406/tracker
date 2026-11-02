@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { api } from '@/lib/api'
 import { addDays, currentWeekStart, formatRange, isValidISO, weekEndOf, weekNumber, weekStartOf } from '@/lib/dates'
 import { useTargets } from '@/lib/useTargets'
@@ -8,14 +8,13 @@ import { PeriodNav } from './PeriodNav'
 import { TargetsPage } from './TargetsPage'
 
 export default function WeeklyView() {
-  const router = useRouter()
   const pathname = usePathname()
   const raw = useSearchParams().get('week')
   // Any date inside a week resolves to that week's Monday.
   const start = isValidISO(raw) ? weekStartOf(raw) : currentWeekStart()
   const go = (d: string) => {
     const s = weekStartOf(d)
-    router.push(s === currentWeekStart() ? pathname : `${pathname}?week=${s}`)
+    window.history.pushState(null, '', s === currentWeekStart() ? pathname : `${pathname}?week=${s}`)
   }
   const t = useTargets(api.weekly, start)
 

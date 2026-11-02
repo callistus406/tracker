@@ -22,7 +22,6 @@ export function useTargets<T extends Target>(adapter: Adapter<T>, key: string) {
 
   const load = useCallback(() => {
     let stale = false
-    setLoading(true)
     setError(null)
     adapter
       .list(key)

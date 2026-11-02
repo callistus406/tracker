@@ -1,6 +1,6 @@
 'use client'
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation'
+import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { api } from '@/lib/api'
 import { addDays, formatLong, isValidISO, today, weekStartOf } from '@/lib/dates'
@@ -11,11 +11,11 @@ import { TargetsPage } from './TargetsPage'
 import { WeekStrip } from './WeekStrip'
 
 export default function DailyView() {
-  const router = useRouter()
   const pathname = usePathname()
   const raw = useSearchParams().get('date')
   const date = isValidISO(raw) ? raw : today()
-  const go = (d: string) => router.push(d === today() ? pathname : `${pathname}?date=${d}`)
+  // pushState (which Next syncs into useSearchParams) switches days instantly; router.push would fetch from the network.
+  const go = (d: string) => window.history.pushState(null, '', d === today() ? pathname : `${pathname}?date=${d}`)
 
   const t = useTargets(api.daily, date)
 
