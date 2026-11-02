@@ -3,13 +3,14 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
-import { IconDay, IconHistory, IconHome, IconWeek } from './Icons'
+import { IconDay, IconHistory, IconHome, IconSliders, IconWeek } from './Icons'
 
 const NAV: { href: string; label: string; short: string; icon: ReactNode }[] = [
   { href: '/', label: 'Dashboard', short: 'Home', icon: <IconHome /> },
   { href: '/daily', label: 'Daily Targets', short: 'Daily', icon: <IconDay /> },
   { href: '/weekly', label: 'Weekly Targets', short: 'Weekly', icon: <IconWeek /> },
   { href: '/history', label: 'History', short: 'History', icon: <IconHistory /> },
+  { href: '/settings', label: 'Settings', short: 'Settings', icon: <IconSliders /> },
 ]
 
 export function Nav({ variant }: { variant: 'sidebar' | 'tabs' }) {
@@ -38,14 +39,14 @@ export function Nav({ variant }: { variant: 'sidebar' | 'tabs' }) {
   return (
     <nav
       aria-label="Main"
-      className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-4 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
+      className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
       {NAV.map((n) => (
         <Link
           key={n.href}
           href={n.href}
           aria-current={active(n.href) ? 'page' : undefined}
-          className={`flex flex-col items-center gap-0.5 py-2 text-[11px] ${active(n.href) ? 'font-medium text-accent' : 'text-muted'}`}
+          className={`flex min-h-14 flex-col items-center justify-center gap-0.5 py-2 text-[11px] ${active(n.href) ? 'font-medium text-accent' : 'text-muted'}`}
         >
           {n.icon}
           {n.short}

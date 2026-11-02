@@ -8,6 +8,8 @@ export interface TargetInput {
   title: string
   description: string
   status?: Status
+  /** Daily only: "HH:MM" reminder time; empty string or null clears it. */
+  remindAt?: string | null
 }
 /** `period` moves the target to another day (daily) or week start (weekly). */
 export type UpdateInput = Partial<TargetInput> & { period?: string }
@@ -38,12 +40,16 @@ function writeDB(db: DB) {
   }
 }
 
+/** Raw copy of everything stored on this device (used by reminders). */
+export const snapshot = (): DB => readDB()
+
 const isMonday = (s: string) => parseISO(s).getDay() === 1
 
 function check(c: Collection, v: Partial<TargetInput>, period?: string) {
   if (v.title !== undefined && (!v.title.trim() || v.title.trim().length > 200)) throw new Error('Title must be 1–200 characters')
   if (v.description !== undefined && v.description.trim().length > 1000) throw new Error('Note is too long (max 1000 characters)')
   if (v.status !== undefined && !STATUSES.includes(v.status)) throw new Error('Invalid status')
+  if (v.remindAt && !/^([01]\d|2[0-3]):[0-5]\d$/.test(v.remindAt)) throw new Error('Invalid reminder time')
   if (period !== undefined) {
     if (!isValidISO(period)) throw new Error('Invalid date')
     if (c === 'weekly' && !isMonday(period)) throw new Error('A week must start on a Monday')
@@ -69,7 +75,7 @@ function collection<T extends DailyTarget | WeeklyTarget>(c: Collection) {
         status: v.status ?? 'not_started',
         createdAt: now,
         updatedAt: now,
-        ...(c === 'daily' ? { date: key } : { weekStartDate: key, weekEndDate: weekEndOf(key) }),
+        ...(c === 'daily' ? { date: key, ...(v.remindAt && { remindAt: v.remindAt }) } : { weekStartDate: key, weekEndDate: weekEndOf(key) }),
       } as unknown as T
       const db = readDB()
       list(db).push(t)
@@ -85,6 +91,10 @@ function collection<T extends DailyTarget | WeeklyTarget>(c: Collection) {
       if (v.title !== undefined) t.title = v.title.trim()
       if (v.description !== undefined) t.description = v.description.trim()
       if (v.status !== undefined) t.status = v.status
+      if (c === 'daily' && v.remindAt !== undefined) {
+        if (v.remindAt) (t as DailyTarget).remindAt = v.remindAt
+        else delete (t as DailyTarget).remindAt
+      }
       if (period) {
         ;(t as unknown as Record<string, string>)[field(c)] = period
         if (c === 'weekly') (t as WeeklyTarget).weekEndDate = weekEndOf(period)

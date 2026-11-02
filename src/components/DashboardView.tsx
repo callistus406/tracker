@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { api, hasData, lastBackup } from '@/lib/api'
+import { anyEnabled, loadSettings } from '@/lib/reminders'
 import { currentWeekStart, formatLong, formatRange, today, weekEndOf, weekNumber } from '@/lib/dates'
 import { useTargets, type TargetsApi } from '@/lib/useTargets'
 import type { Target } from '@/types'
@@ -27,7 +28,7 @@ function Card<T extends Target>({
   const s = summarize(t.items)
   const open = t.items.filter((i) => i.status !== 'completed')
   return (
-    <section className="flex flex-col rounded-2xl border border-line bg-surface p-5">
+    <section className="flex min-w-0 flex-col rounded-2xl border border-line bg-surface p-4 sm:p-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="font-semibold">{title}</h2>
@@ -64,7 +65,7 @@ function Card<T extends Target>({
         )}
       </div>
 
-      <Link href={href} className="mt-4 text-sm font-medium text-accent hover:underline">
+      <Link href={href} className="-mb-2 mt-2 inline-block self-start py-2 text-sm font-medium text-accent hover:underline">
         {cta} →
       </Link>
     </section>
@@ -83,7 +84,11 @@ export default function DashboardView() {
   useEffect(() => {
     const last = lastBackup()
     setNeedsBackup(hasData() && (!last || Date.now() - last > 14 * 86_400_000))
+    try {
+      setNudge(!anyEnabled(loadSettings()) && !localStorage.getItem('tt-nudge-reminders'))
+    } catch {}
   }, [])
+  const [nudge, setNudge] = useState(false)
 
   return (
     <div className="space-y-5">
@@ -92,12 +97,31 @@ export default function DashboardView() {
         <h1 className="text-2xl font-semibold">{hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}</h1>
       </div>
       {needsBackup && (
-        <Link href="/history#backup" className="flex items-center justify-between gap-3 rounded-2xl bg-warn-soft px-4 py-3 text-sm text-warn">
+        <Link href="/settings#backup" className="flex items-center justify-between gap-3 rounded-2xl bg-warn-soft px-4 py-3 text-sm text-warn">
           <span>Your data is only on this phone. Save a backup.</span>
           <span className="shrink-0 font-semibold">Back up →</span>
         </Link>
       )}
-      <div className="grid gap-4 md:grid-cols-2">
+      {nudge && (
+        <div className="flex items-center justify-between gap-3 rounded-2xl bg-accent-soft px-4 py-3 text-sm">
+          <Link href="/settings#rem" className="flex-1 text-accent">
+            <span className="font-semibold">Get reminders</span> for your day and week →
+          </Link>
+          <button
+            aria-label="Dismiss"
+            className="-m-2 p-2 text-muted"
+            onClick={() => {
+              setNudge(false)
+              try {
+                localStorage.setItem('tt-nudge-reminders', '1')
+              } catch {}
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      )}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
         <Card
           title="Today"
           subtitle={formatLong(date)}

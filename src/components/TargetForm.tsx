@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { formatRange, formatShort, weekEndOf, weekNumber, weekStartOf } from '@/lib/dates'
+import { askPermission } from '@/lib/reminders'
 import type { Status, Target } from '@/types'
 import { StatusControl } from './StatusControl'
 
@@ -11,25 +12,28 @@ export interface FormValues {
   status: Status
   /** Day (YYYY-MM-DD) or week start the target belongs to. */
   period: string
+  /** Daily only: "HH:MM", or empty for no reminder. */
+  remindAt?: string
 }
 
 interface Props {
   noun: 'day' | 'week'
   periodKey: string
-  initial?: Target
+  initial?: Target & { remindAt?: string }
   initialTitle?: string
   onSubmit: (v: FormValues) => Promise<void>
   onClose: () => void
 }
 
 const field =
-  'mt-1 w-full rounded-xl border border-line bg-surface px-3 py-2.5 font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/30'
+  'mt-1 w-full min-w-0 rounded-xl border border-line bg-surface px-3 py-3 text-base font-normal outline-none focus:border-accent focus:ring-2 focus:ring-accent/30'
 
 export function TargetForm({ noun, periodKey, initial, initialTitle, onSubmit, onClose }: Props) {
   const [title, setTitle] = useState(initial?.title ?? initialTitle ?? '')
   const [description, setDescription] = useState(initial?.description ?? '')
   const [status, setStatus] = useState<Status>(initial?.status ?? 'not_started')
   const [date, setDate] = useState(periodKey)
+  const [remindAt, setRemindAt] = useState(initial?.remindAt ?? '')
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const titleRef = useRef<HTMLInputElement>(null)
@@ -49,8 +53,16 @@ export function TargetForm({ noun, periodKey, initial, initialTitle, onSubmit, o
     if (!date) return setError(`Pick a ${noun}`)
     setSaving(true)
     setError(null)
+    // Ask for notification permission while we still have the tap that submitted the form.
+    if (noun === 'day' && remindAt) askPermission()
     try {
-      await onSubmit({ title: title.trim(), description: description.trim(), status, period })
+      await onSubmit({
+        title: title.trim(),
+        description: description.trim(),
+        status,
+        period,
+        ...(noun === 'day' && { remindAt }),
+      })
       onClose()
     } catch (err) {
       setError((err as Error).message)
@@ -99,14 +111,30 @@ export function TargetForm({ noun, periodKey, initial, initialTitle, onSubmit, o
           </span>
         </label>
 
+        {noun === 'day' && (
+          <div className="mb-5 text-sm font-medium">
+            <label htmlFor="remind">
+              Remind me at <span className="font-normal text-muted">(optional)</span>
+            </label>
+            <div className="mt-1 flex items-center gap-2">
+              <input id="remind" type="time" value={remindAt} onChange={(e) => setRemindAt(e.target.value)} className={`${field} mt-0 flex-1`} />
+              {remindAt && (
+                <button type="button" onClick={() => setRemindAt('')} className="rounded-xl px-3 py-2.5 text-sm font-normal text-muted hover:bg-line/50">
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {error && <p className="mb-3 text-sm text-danger" role="alert">{error}</p>}
         <div className="flex justify-end gap-2">
-          <button type="button" onClick={onClose} className="rounded-xl px-4 py-2.5 text-sm text-muted hover:bg-line/50">
+          <button type="button" onClick={onClose} className="rounded-xl px-4 py-3 text-sm text-muted hover:bg-line/50">
             Cancel
           </button>
           <button
             disabled={saving}
-            className="rounded-xl bg-accent px-5 py-2.5 text-sm font-semibold text-accent-fg hover:opacity-90 disabled:opacity-60"
+            className="rounded-xl bg-accent px-6 py-3 text-sm font-semibold text-accent-fg hover:opacity-90 disabled:opacity-60"
           >
             {saving ? 'Saving…' : 'Save'}
           </button>

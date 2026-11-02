@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState, type FormEvent, type ReactNode, type TouchEvent } from 'react'
-import { addDays, formatRange, formatShort, weekEndOf } from '@/lib/dates'
+import { addDays, formatRange, formatShort, today, weekEndOf } from '@/lib/dates'
 import type { Adapter, TargetsApi } from '@/lib/useTargets'
 import type { Target } from '@/types'
-import { IconPlus } from './Icons'
+import { IconPlus, IconSliders } from './Icons'
 import { ProgressCard } from './Progress'
 import { TargetForm, type FormValues } from './TargetForm'
 import { TargetItem } from './TargetItem'
@@ -31,6 +31,15 @@ export function TargetsPage<T extends Target>({ t, adapter, periodKey, noun, hea
   const [filter, setFilter] = useState<Filter>('all')
   const [quick, setQuick] = useState('')
   const touch = useRef<{ x: number; y: number } | null>(null)
+
+  // Re-render each minute so "overdue" reminder chips stay accurate while the page is open.
+  const [, setMinute] = useState(0)
+  useEffect(() => {
+    const id = setInterval(() => setMinute((m) => m + 1), 60_000)
+    return () => clearInterval(id)
+  }, [])
+  const nowHM = new Date().toTimeString().slice(0, 5)
+  const isToday = noun === 'day' && periodKey === today()
 
   const step = noun === 'day' ? 1 : 7
   const nextKey = addDays(periodKey, step)
@@ -121,7 +130,7 @@ export function TargetsPage<T extends Target>({ t, adapter, periodKey, noun, hea
       key={f}
       onClick={() => setFilter(f)}
       aria-pressed={filter === f}
-      className={`rounded-full px-3 py-1 text-sm ${filter === f ? 'bg-fg font-medium text-page' : 'text-muted hover:bg-line/50'}`}
+      className={`rounded-full px-4 py-2 text-sm ${filter === f ? 'bg-fg font-medium text-page' : 'text-muted hover:bg-line/50'}`}
     >
       {text} <span className="opacity-70">{n}</span>
     </button>
@@ -158,22 +167,24 @@ export function TargetsPage<T extends Target>({ t, adapter, periodKey, noun, hea
           value={quick}
           onChange={(e) => setQuick(e.target.value)}
           maxLength={200}
-          placeholder={`Add a target for this ${noun}…`}
+          placeholder="Add a target…"
           aria-label="New target title"
-          className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-4 py-3 outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/30"
+          className="min-w-0 flex-1 rounded-xl border border-line bg-surface px-4 py-3.5 text-base outline-none placeholder:text-muted focus:border-accent focus:ring-2 focus:ring-accent/30"
         />
         <button
           type="button"
           onClick={() => setForm({ title: quick.trim() })}
-          className="rounded-xl border border-line bg-surface px-3 text-sm text-muted hover:bg-line/50"
-          title="Add with a note, status or different date"
+          className="flex items-center gap-1.5 rounded-xl border border-line bg-surface px-3.5 text-sm text-muted hover:bg-line/50"
+          aria-label="Add with details"
+          title="Add with a note, status, reminder or different date"
         >
-          Details
+          <IconSliders />
+          <span className="hidden sm:inline">Details</span>
         </button>
         <button
           aria-label="Add target"
           disabled={!quick.trim()}
-          className="flex items-center rounded-xl bg-accent px-3.5 text-accent-fg hover:opacity-90 disabled:opacity-40"
+          className="flex items-center rounded-xl bg-accent px-4 text-accent-fg hover:opacity-90 disabled:opacity-40"
         >
           <IconPlus />
         </button>
@@ -197,7 +208,7 @@ export function TargetsPage<T extends Target>({ t, adapter, periodKey, noun, hea
         <div className="rounded-2xl border border-dashed border-line py-12 text-center">
           <p className="font-medium">Nothing planned for this {noun}</p>
           <p className="mt-1 text-sm text-muted">Type a target above and press Enter.</p>
-          <button onClick={() => setForm({})} className="mt-3 text-sm font-medium text-accent hover:underline">
+          <button onClick={() => setForm({})} className="mt-1 inline-block py-2 text-sm font-medium text-accent hover:underline">
             Or add one with details
           </button>
         </div>
@@ -212,7 +223,11 @@ export function TargetsPage<T extends Target>({ t, adapter, periodKey, noun, hea
               key={item._id}
               item={item}
               moveLabel={moveLabel}
-              onToggle={() => t.setStatus(item._id, item.status === 'completed' ? 'not_started' : 'completed')}
+              overdue={isToday && item.status !== 'completed' && !!(item as { remindAt?: string }).remindAt && (item as { remindAt?: string }).remindAt! < nowHM}
+              onToggle={() => {
+                if (item.status !== 'completed') navigator.vibrate?.(12)
+                t.setStatus(item._id, item.status === 'completed' ? 'not_started' : 'completed')
+              }}
               onStart={() => t.setStatus(item._id, 'in_progress')}
               onEdit={() => setForm({ target: item })}
               onMove={() => move(item._id)}

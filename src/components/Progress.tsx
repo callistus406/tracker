@@ -25,16 +25,16 @@ export function ProgressBar({ percent }: { percent: number }) {
 export function ProgressCard({ items }: { items: Pick<Target, 'status'>[] }) {
   const s = summarize(items)
   return (
-    <section className="rounded-2xl border border-line bg-surface p-4" aria-label="Progress">
-      <div className="mb-3 flex items-end justify-between">
+    <section className="rounded-2xl border border-line bg-surface p-3.5 sm:p-4" aria-label="Progress">
+      <div className="mb-2.5 flex items-end justify-between">
         <p className="text-sm text-muted">
-          <span className="text-3xl font-semibold text-fg">{s.completed}</span>
+          <span className="text-2xl font-semibold text-fg sm:text-3xl">{s.completed}</span>
           <span className="text-lg text-fg"> / {s.total}</span> completed
         </p>
         <p className="text-xl font-semibold">{s.percent}%</p>
       </div>
       <ProgressBar percent={s.percent} />
-      <p className="mt-3 text-xs text-muted">
+      <p className="mt-2.5 text-xs text-muted">
         {s.total === 0
           ? 'Nothing recorded yet'
           : s.remaining === 0

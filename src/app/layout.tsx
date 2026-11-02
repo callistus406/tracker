@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from 'next'
+import { ReminderRunner } from '@/components/ReminderRunner'
 import { ServiceWorker } from '@/components/PwaSupport'
 import { ToastProvider } from '@/components/Toast'
 import './globals.css'
@@ -23,11 +24,16 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* Apply a saved light/dark choice before first paint to avoid a flash. */}
+        <script dangerouslySetInnerHTML={{ __html: "try{var t=localStorage.getItem('tt-theme');if(t)document.documentElement.dataset.theme=t}catch(e){}" }} />
+      </head>
       <body>
         <ToastProvider>
           {children}
           <ServiceWorker />
+          <ReminderRunner />
         </ToastProvider>
       </body>
     </html>

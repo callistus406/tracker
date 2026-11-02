@@ -36,7 +36,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
             key={toast.id}
             className="pointer-events-auto flex items-center gap-4 rounded-xl bg-fg px-4 py-2.5 text-sm text-page shadow-lg"
           >
-            <span>{toast.message}</span>
+            <span className="whitespace-pre-line">{toast.message}</span>
             {toast.action && (
               <button
                 className="font-semibold underline"

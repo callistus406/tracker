@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { BackupCard } from '@/components/BackupCard'
 import { ProgressBar } from '@/components/Progress'
 import { api } from '@/lib/api'
 import { addDays, currentWeekStart, formatRange, formatShort, today, weekEndOf, weekNumber } from '@/lib/dates'
@@ -58,7 +57,7 @@ export default function HistoryView() {
             key={t}
             onClick={() => setTab(t)}
             aria-pressed={tab === t}
-            className={`rounded-md px-4 py-1.5 ${tab === t ? 'bg-accent font-medium text-accent-fg' : 'text-muted hover:bg-line/50'}`}
+            className={`rounded-lg px-5 py-2.5 ${tab === t ? 'bg-accent font-medium text-accent-fg' : 'text-muted hover:bg-line/50'}`}
           >
             {t === 'daily' ? 'Daily' : 'Weekly'}
           </button>
@@ -105,8 +104,6 @@ export default function HistoryView() {
           </li>
         ))}
       </ul>
-
-      <BackupCard />
     </div>
   )
 }

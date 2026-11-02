@@ -10,6 +10,8 @@ export interface Target {
 }
 export interface DailyTarget extends Target {
   date: string
+  /** Optional reminder time, "HH:MM" (24h, local). */
+  remindAt?: string
 }
 export interface WeeklyTarget extends Target {
   weekStartDate: string

@@ -1,7 +1,7 @@
 // Offline-first: the whole app is static, so once visited it opens instantly with no connection.
-const VERSION = 'v3'
+const VERSION = 'v4'
 const CACHE = `shell-${VERSION}`
-const PAGES = ['/', '/daily/', '/weekly/', '/history/']
+const PAGES = ['/', '/daily/', '/weekly/', '/history/', '/settings/']
 const EXTRA = ['/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/maskable-512.png']
 
 // Pre-cache every page plus the scripts/styles they reference, so each screen works offline on first install.
@@ -62,4 +62,21 @@ self.addEventListener('fetch', (e) => {
   if (req.mode === 'navigate') e.respondWith(staleWhileRevalidate(req, { ignoreSearch: true }))
   else if (url.pathname.startsWith('/_next/static/') || url.pathname.startsWith('/icons/')) e.respondWith(cacheFirst(req))
   else e.respondWith(staleWhileRevalidate(req))
+})
+
+// Tapping a reminder opens (or focuses) the app on the right page.
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  const url = new URL(e.notification.data?.url || '/', self.location.origin).href
+  e.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async (wins) => {
+      const open = wins[0]
+      if (open) {
+        await open.focus()
+        if ('navigate' in open) return open.navigate(url).catch(() => {})
+      } else {
+        return self.clients.openWindow(url)
+      }
+    }),
+  )
 })
