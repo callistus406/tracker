@@ -1,7 +1,7 @@
 // On-device data layer. Everything is stored in this browser's localStorage, so the app needs no
 // server or database and the data never leaves the phone. Same async shape the UI already uses.
-import type { DailyTarget, Status, Summary, WeeklyTarget } from '@/types'
-import { STATUSES } from '@/types'
+import type { Category, DailyTarget, Expense, Status, Summary, WeeklyTarget } from '@/types'
+import { CATEGORIES, STATUSES } from '@/types'
 import { addDays, isValidISO, parseISO, weekEndOf } from './dates'
 
 export interface TargetInput {
@@ -18,6 +18,7 @@ type Collection = 'daily' | 'weekly'
 interface DB {
   daily: DailyTarget[]
   weekly: WeeklyTarget[]
+  expenses: Expense[]
 }
 
 const KEY = 'tt-data-v1'
@@ -26,9 +27,13 @@ const BACKUP_KEY = 'tt-last-backup'
 function readDB(): DB {
   try {
     const d = JSON.parse(localStorage.getItem(KEY) ?? '')
-    return { daily: Array.isArray(d.daily) ? d.daily : [], weekly: Array.isArray(d.weekly) ? d.weekly : [] }
+    return {
+      daily: Array.isArray(d.daily) ? d.daily : [],
+      weekly: Array.isArray(d.weekly) ? d.weekly : [],
+      expenses: Array.isArray(d.expenses) ? d.expenses : [],
+    }
   } catch {
-    return { daily: [], weekly: [] }
+    return { daily: [], weekly: [], expenses: [] }
   }
 }
 
@@ -132,7 +137,75 @@ function summarize(c: Collection, filter: (key: string) => boolean = () => true)
     .sort((a, b) => b.key.localeCompare(a.key))
 }
 
+// ---- Expenses ----
+
+export interface ExpenseInput {
+  amount: number
+  category: Category
+  note: string
+  date: string
+}
+
+const CATEGORY_IDS: string[] = CATEGORIES.map((c) => c.id)
+const round2 = (n: number) => Math.round(n * 100) / 100
+
+function checkExpense(v: Partial<ExpenseInput>) {
+  if (v.amount !== undefined && (!Number.isFinite(v.amount) || v.amount <= 0 || v.amount > 1e9)) throw new Error('Enter an amount greater than 0')
+  if (v.category !== undefined && !CATEGORY_IDS.includes(v.category)) throw new Error('Invalid category')
+  if (v.note !== undefined && v.note.trim().length > 200) throw new Error('Note is too long (max 200 characters)')
+  if (v.date !== undefined && !isValidISO(v.date)) throw new Error('Invalid date')
+}
+
+const newestFirst = (a: Expense, b: Expense) => b.date.localeCompare(a.date) || b.createdAt.localeCompare(a.createdAt)
+
+const expenses = {
+  /** Expenses dated from..to (inclusive), newest first. */
+  list: async (from: string, to: string): Promise<Expense[]> =>
+    readDB().expenses.filter((e) => e.date >= from && e.date <= to).sort(newestFirst),
+
+  create: async (v: ExpenseInput): Promise<Expense> => {
+    checkExpense(v)
+    const now = new Date().toISOString()
+    const e: Expense = {
+      _id: crypto.randomUUID(),
+      amount: round2(v.amount),
+      category: v.category,
+      note: (v.note ?? '').trim(),
+      date: v.date,
+      createdAt: now,
+      updatedAt: now,
+    }
+    const db = readDB()
+    db.expenses.push(e)
+    writeDB(db)
+    return e
+  },
+
+  update: async (id: string, v: Partial<ExpenseInput>): Promise<Expense> => {
+    checkExpense(v)
+    const db = readDB()
+    const e = db.expenses.find((x) => x._id === id)
+    if (!e) throw new Error('Expense not found')
+    if (v.amount !== undefined) e.amount = round2(v.amount)
+    if (v.category !== undefined) e.category = v.category
+    if (v.note !== undefined) e.note = v.note.trim()
+    if (v.date !== undefined) e.date = v.date
+    e.updatedAt = new Date().toISOString()
+    writeDB(db)
+    return e
+  },
+
+  remove: async (id: string): Promise<void> => {
+    const db = readDB()
+    db.expenses = db.expenses.filter((x) => x._id !== id)
+    writeDB(db)
+  },
+
+  all: async (): Promise<Expense[]> => readDB().expenses.sort(newestFirst),
+}
+
 export const api = {
+  expenses,
   daily: collection<DailyTarget>('daily'),
   weekly: collection<WeeklyTarget>('weekly'),
   history: {
@@ -147,6 +220,7 @@ export const api = {
 export interface BackupInfo {
   daily: number
   weekly: number
+  expenses: number
 }
 
 export function exportData(): { json: string; counts: BackupInfo } {
@@ -155,7 +229,7 @@ export function exportData(): { json: string; counts: BackupInfo } {
   try {
     localStorage.setItem(BACKUP_KEY, String(Date.now()))
   } catch {}
-  return { json, counts: { daily: db.daily.length, weekly: db.weekly.length } }
+  return { json, counts: { daily: db.daily.length, weekly: db.weekly.length, expenses: db.expenses.length } }
 }
 
 export const lastBackup = (): number | null => {
@@ -165,12 +239,12 @@ export const lastBackup = (): number | null => {
 
 export const hasData = () => {
   const db = readDB()
-  return db.daily.length + db.weekly.length > 0
+  return db.daily.length + db.weekly.length + db.expenses.length > 0
 }
 
 /** Merges a backup file into the data on this device (same id = backup wins). */
 export function importData(text: string): BackupInfo {
-  let parsed: { daily?: unknown; weekly?: unknown }
+  let parsed: { daily?: unknown; weekly?: unknown; expenses?: unknown }
   try {
     parsed = JSON.parse(text)
   } catch {
@@ -180,10 +254,15 @@ export function importData(text: string): BackupInfo {
     typeof t._id === 'string' && typeof t.title === 'string' && t.title.trim() && STATUSES.includes(t.status as Status)
   const daily = (Array.isArray(parsed.daily) ? parsed.daily : []) as DailyTarget[]
   const weekly = (Array.isArray(parsed.weekly) ? parsed.weekly : []) as WeeklyTarget[]
-  if (!daily.length && !weekly.length && !('daily' in parsed || 'weekly' in parsed)) throw new Error('That file is not a Target Tracker backup.')
+  const spend = (Array.isArray(parsed.expenses) ? parsed.expenses : []) as Expense[]
+  if (!daily.length && !weekly.length && !spend.length && !('daily' in parsed || 'weekly' in parsed || 'expenses' in parsed)) throw new Error('That file is not a Target Tracker backup.')
   const goodDaily = daily.filter((t) => okBase(t as never) && isValidISO(t.date))
   const goodWeekly = weekly.filter((t) => okBase(t as never) && isValidISO(t.weekStartDate) && isMonday(t.weekStartDate))
     .map((t) => ({ ...t, weekEndDate: addDays(t.weekStartDate, 6) }))
+
+  const goodSpend = spend
+    .filter((e) => typeof e._id === 'string' && Number.isFinite(e.amount) && e.amount > 0 && isValidISO(e.date))
+    .map((e) => ({ ...e, amount: round2(e.amount), category: CATEGORY_IDS.includes(e.category) ? e.category : ('other' as const), note: typeof e.note === 'string' ? e.note.slice(0, 200) : '' }))
 
   const db = readDB()
   const merge = <T extends { _id: string }>(into: T[], add: T[]) => {
@@ -191,8 +270,8 @@ export function importData(text: string): BackupInfo {
     for (const t of add) byId.set(t._id, t)
     return [...byId.values()]
   }
-  writeDB({ daily: merge(db.daily, goodDaily), weekly: merge(db.weekly, goodWeekly) })
-  return { daily: goodDaily.length, weekly: goodWeekly.length }
+  writeDB({ daily: merge(db.daily, goodDaily), weekly: merge(db.weekly, goodWeekly), expenses: merge(db.expenses, goodSpend) })
+  return { daily: goodDaily.length, weekly: goodWeekly.length, expenses: goodSpend.length }
 }
 
 /** Asks the browser not to evict this app's data when storage is low. */

@@ -1,7 +1,7 @@
 // Offline-first: the whole app is static, so once visited it opens instantly with no connection.
 const VERSION = 'v4'
 const CACHE = `shell-${VERSION}`
-const PAGES = ['/', '/daily/', '/weekly/', '/history/', '/settings/']
+const PAGES = ['/', '/daily/', '/weekly/', '/history/', '/settings/', '/expenses/']
 const EXTRA = ['/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png', '/icons/maskable-512.png']
 
 // Pre-cache every page plus the scripts/styles they reference, so each screen works offline on first install.

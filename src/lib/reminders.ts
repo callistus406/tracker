@@ -11,12 +11,14 @@ export interface ReminderSettings {
   morning: Slot
   evening: Slot
   weekly: Slot
+  expenses: Slot
 }
 
 export const DEFAULT_SETTINGS: ReminderSettings = {
   morning: { on: false, time: '08:00' },
   evening: { on: false, time: '20:00' },
   weekly: { on: false, time: '18:00' },
+  expenses: { on: false, time: '21:00' },
 }
 
 const SETTINGS_KEY = 'tt-reminders-v1'
@@ -31,6 +33,7 @@ export function loadSettings(): ReminderSettings {
       morning: { ...DEFAULT_SETTINGS.morning, ...s.morning },
       evening: { ...DEFAULT_SETTINGS.evening, ...s.evening },
       weekly: { ...DEFAULT_SETTINGS.weekly, ...s.weekly },
+      expenses: { ...DEFAULT_SETTINGS.expenses, ...s.expenses },
     }
   } catch {
     return DEFAULT_SETTINGS
@@ -43,7 +46,7 @@ export function saveSettings(s: ReminderSettings) {
   } catch {}
 }
 
-export const anyEnabled = (s: ReminderSettings) => s.morning.on || s.evening.on || s.weekly.on
+export const anyEnabled = (s: ReminderSettings) => s.morning.on || s.evening.on || s.weekly.on || s.expenses.on
 
 const minutes = (t: string) => Number(t.slice(0, 2)) * 60 + Number(t.slice(3, 5))
 const inWindow = (t: string, nowMin: number) => nowMin >= minutes(t) && nowMin - minutes(t) <= WINDOW_MIN
@@ -83,6 +86,10 @@ export function dueReminders(now = new Date()): Due[] {
 
   if (s.evening.on && open.length && inWindow(s.evening.time, nowMin)) {
     out.push({ id: `evening:${day}`, title: 'Evening check-in', body: `${plural(open.length, 'target')} still open today.`, url: '/daily/' })
+  }
+
+  if (s.expenses.on && inWindow(s.expenses.time, nowMin) && !db.expenses.some((e) => e.date === day)) {
+    out.push({ id: `expenses:${day}`, title: 'Log your expenses', body: 'Nothing logged today. Add what you spent.', url: '/expenses/' })
   }
 
   if (s.weekly.on && now.getDay() === 0 && inWindow(s.weekly.time, nowMin)) {
@@ -184,6 +191,7 @@ export function buildCalendar(): { ics: string; count: number } {
   const events: string[][] = []
   if (s.morning.on) events.push(event('morning', 'Plan your day', stamp(day, s.morning.time), ['RRULE:FREQ=DAILY']))
   if (s.evening.on) events.push(event('evening', 'Evening check-in: finish today’s targets', stamp(day, s.evening.time), ['RRULE:FREQ=DAILY']))
+  if (s.expenses.on) events.push(event('expenses', 'Log today’s expenses', stamp(day, s.expenses.time), ['RRULE:FREQ=DAILY']))
   if (s.weekly.on) {
     const sunday = addDays(weekStartOf(day), 6)
     const start = parseISO(day) > parseISO(sunday) ? addDays(sunday, 7) : sunday

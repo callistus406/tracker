@@ -4,9 +4,12 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { api, hasData, lastBackup } from '@/lib/api'
 import { anyEnabled, loadSettings } from '@/lib/reminders'
+import { loadSpend, money, monthBounds, monthKey, sumOf, DEFAULT_SPEND, type SpendSettings } from '@/lib/spend'
+import { useExpenses } from '@/lib/useExpenses'
 import { currentWeekStart, formatLong, formatRange, today, weekEndOf, weekNumber } from '@/lib/dates'
 import { useTargets, type TargetsApi } from '@/lib/useTargets'
 import type { Target } from '@/types'
+import { IconSliders } from './Icons'
 import { ProgressBar, summarize } from './Progress'
 import { TargetCheck } from './TargetCheck'
 
@@ -78,10 +81,16 @@ export default function DashboardView() {
   const daily = useTargets(api.daily, date)
   const weekly = useTargets(api.weekly, week)
   const hour = new Date().getHours()
+  const { from, to } = monthBounds(monthKey(date))
+  const spent = useExpenses(from, to)
+  const [cfg, setCfg] = useState<SpendSettings>(DEFAULT_SPEND)
+  const monthTotal = sumOf(spent.items)
+  const todayTotal = sumOf(spent.items.filter((e) => e.date === date))
 
   // Data lives only on this phone: gently remind to back up every couple of weeks.
   const [needsBackup, setNeedsBackup] = useState(false)
   useEffect(() => {
+    setCfg(loadSpend())
     const last = lastBackup()
     setNeedsBackup(hasData() && (!last || Date.now() - last > 14 * 86_400_000))
     try {
@@ -92,9 +101,14 @@ export default function DashboardView() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <p className="text-sm text-muted">{formatLong(date)}</p>
-        <h1 className="text-2xl font-semibold">{hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}</h1>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm text-muted">{formatLong(date)}</p>
+          <h1 className="text-2xl font-semibold">{hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'}</h1>
+        </div>
+        <Link href="/settings" aria-label="Settings" className="-m-1 shrink-0 rounded-xl p-3 text-muted hover:bg-line/50 md:hidden">
+          <IconSliders />
+        </Link>
       </div>
       {needsBackup && (
         <Link href="/settings#backup" className="flex items-center justify-between gap-3 rounded-2xl bg-warn-soft px-4 py-3 text-sm text-warn">
@@ -139,6 +153,27 @@ export default function DashboardView() {
           empty="No targets for this week yet."
         />
       </div>
+      <Link href="/expenses" className="block rounded-2xl border border-line bg-surface p-4 hover:border-accent sm:p-5">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h2 className="font-semibold">Spending</h2>
+            <p className="text-sm text-muted">This month</p>
+          </div>
+          <p className="text-2xl font-semibold tabular-nums wrap-anywhere">{spent.loading ? '…' : money(monthTotal, cfg.currency)}</p>
+        </div>
+        {cfg.budget > 0 && (
+          <div className="mt-3">
+            <ProgressBar percent={Math.min(100, (monthTotal / cfg.budget) * 100)} />
+            <p className="mt-2 text-xs text-muted">
+              {monthTotal > cfg.budget ? `${money(monthTotal - cfg.budget, cfg.currency)} over` : `${money(cfg.budget - monthTotal, cfg.currency)} left`} of{' '}
+              {money(cfg.budget, cfg.currency)}
+            </p>
+          </div>
+        )}
+        <p className="mt-3 text-sm text-accent">
+          {todayTotal > 0 ? `${money(todayTotal, cfg.currency)} today · ` : ''}Open Expenses →
+        </p>
+      </Link>
     </div>
   )
 }

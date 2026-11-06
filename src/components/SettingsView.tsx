@@ -11,6 +11,7 @@ import {
   type Permission,
   type ReminderSettings,
 } from '@/lib/reminders'
+import { CURRENCIES, loadSpend, saveSpend, type SpendSettings } from '@/lib/spend'
 import { BackupCard } from './BackupCard'
 import { useToast } from './Toast'
 
@@ -21,6 +22,7 @@ const SLOTS: { key: SlotKey; label: string; hint: string }[] = [
   { key: 'morning', label: 'Morning plan', hint: 'Your targets for the day' },
   { key: 'evening', label: 'Evening check-in', hint: 'Only if something is still open' },
   { key: 'weekly', label: 'Weekly review', hint: 'Sundays: how the week went' },
+  { key: 'expenses', label: 'Log expenses', hint: 'Only if nothing is logged today' },
 ]
 
 const card = 'rounded-2xl border border-line bg-surface p-5'
@@ -57,10 +59,15 @@ export default function SettingsView() {
   const [s, setS] = useState<ReminderSettings | null>(null)
   const [perm, setPerm] = useState<Permission>('default')
   const [theme, setTheme] = useState<Theme>('system')
+  const [spend, setSpend] = useState<SpendSettings>({ currency: 'USD', budget: 0 })
+  const [budgetText, setBudgetText] = useState('')
 
   useEffect(() => {
     setS(loadSettings())
     setPerm(permission())
+    const sp = loadSpend()
+    setSpend(sp)
+    setBudgetText(sp.budget ? String(sp.budget) : '')
     try {
       setTheme((localStorage.getItem('tt-theme') as Theme) || 'system')
     } catch {}
@@ -152,6 +159,46 @@ export default function SettingsView() {
           alerts that never miss, use “Add to Google Calendar”: it saves a file you open once, and your calendar does the
           rest (including your timed targets).
         </p>
+      </section>
+
+      <section id="spending" className={card} aria-labelledby="spend">
+        <h2 id="spend" className="font-semibold">Spending</h2>
+        <div className="mt-3 grid gap-3 sm:grid-cols-2">
+          <label className="block text-sm font-medium">
+            Currency
+            <select
+              value={spend.currency}
+              onChange={(e) => {
+                const next = { ...spend, currency: e.target.value }
+                setSpend(next)
+                saveSpend(next)
+              }}
+              className="mt-1 w-full rounded-xl border border-line bg-surface px-3 py-3 text-base font-normal outline-none focus:border-accent"
+            >
+              {CURRENCIES.map((c) => (
+                <option key={c}>{c}</option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm font-medium">
+            Monthly budget <span className="font-normal text-muted">(optional)</span>
+            <input
+              inputMode="decimal"
+              value={budgetText}
+              placeholder="No budget"
+              onChange={(e) => {
+                const text = e.target.value
+                if (!/^\d*[.,]?\d{0,2}$/.test(text)) return
+                setBudgetText(text)
+                const n = Number(text.replace(',', '.'))
+                const next = { ...spend, budget: Number.isFinite(n) && n > 0 ? n : 0 }
+                setSpend(next)
+                saveSpend(next)
+              }}
+              className="mt-1 w-full min-w-0 rounded-xl border border-line bg-surface px-3 py-3 text-base font-normal outline-none focus:border-accent"
+            />
+          </label>
+        </div>
       </section>
 
       <section className={card} aria-labelledby="look">

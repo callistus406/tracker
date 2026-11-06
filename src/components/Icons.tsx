@@ -30,4 +30,5 @@ export const IconRight = (p: P) => <Icon {...p}><path d="m9 18 6-6-6-6" /></Icon
 export const IconPlus = (p: P) => <Icon {...p}><path d="M12 5v14M5 12h14" /></Icon>
 export const IconBell = (p: P) => <Icon {...p}><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0" /></Icon>
 export const IconSliders = (p: P) => <Icon {...p}><path d="M4 6h8M18 6h2M4 12h2M12 12h8M4 18h10M20 18h0" /><circle cx="15" cy="6" r="2" /><circle cx="9" cy="12" r="2" /><circle cx="17" cy="18" r="2" /></Icon>
+export const IconWallet = (p: P) => <Icon {...p}><path d="M3 7a2 2 0 0 1 2-2h13v4" /><path d="M3 7v11a2 2 0 0 0 2 2h14a1 1 0 0 0 1-1v-9a1 1 0 0 0-1-1H5a2 2 0 0 1-2-2z" /><circle cx="16" cy="14.5" r="1" /></Icon>
 export const IconDownload = (p: P) => <Icon {...p}><path d="M12 3v12m0 0 4-4m-4 4-4-4M4 19h16" /></Icon>

@@ -3,14 +3,15 @@
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { ReactNode } from 'react'
-import { IconDay, IconHistory, IconHome, IconSliders, IconWeek } from './Icons'
+import { IconDay, IconHistory, IconHome, IconSliders, IconWallet, IconWeek } from './Icons'
 
-const NAV: { href: string; label: string; short: string; icon: ReactNode }[] = [
+const NAV: { href: string; label: string; short: string; icon: ReactNode; sidebarOnly?: boolean }[] = [
   { href: '/', label: 'Dashboard', short: 'Home', icon: <IconHome /> },
   { href: '/daily', label: 'Daily Targets', short: 'Daily', icon: <IconDay /> },
   { href: '/weekly', label: 'Weekly Targets', short: 'Weekly', icon: <IconWeek /> },
+  { href: '/expenses', label: 'Expenses', short: 'Expenses', icon: <IconWallet /> },
   { href: '/history', label: 'History', short: 'History', icon: <IconHistory /> },
-  { href: '/settings', label: 'Settings', short: 'Settings', icon: <IconSliders /> },
+  { href: '/settings', label: 'Settings', short: 'Settings', icon: <IconSliders />, sidebarOnly: true },
 ]
 
 export function Nav({ variant }: { variant: 'sidebar' | 'tabs' }) {
@@ -41,7 +42,7 @@ export function Nav({ variant }: { variant: 'sidebar' | 'tabs' }) {
       aria-label="Main"
       className="fixed inset-x-0 bottom-0 z-20 grid grid-cols-5 border-t border-line bg-surface/95 pb-[env(safe-area-inset-bottom)] backdrop-blur md:hidden"
     >
-      {NAV.map((n) => (
+      {NAV.filter((n) => !n.sidebarOnly).map((n) => (
         <Link
           key={n.href}
           href={n.href}

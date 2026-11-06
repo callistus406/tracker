@@ -23,7 +23,7 @@ export function BackupCard() {
     a.click()
     setTimeout(() => URL.revokeObjectURL(url), 1000)
     setLast(Date.now())
-    toast(`Backed up ${counts.daily} daily and ${counts.weekly} weekly targets`)
+    toast(`Backed up ${counts.daily} daily, ${counts.weekly} weekly targets and ${counts.expenses} expenses`)
   }
 
   const restore = async (f: File | undefined) => {
@@ -31,7 +31,7 @@ export function BackupCard() {
     setError(null)
     try {
       const n = importData(await f.text())
-      toast(`Restored ${n.daily} daily and ${n.weekly} weekly targets`)
+      toast(`Restored ${n.daily} daily, ${n.weekly} weekly targets and ${n.expenses} expenses`)
     } catch (e) {
       setError((e as Error).message)
     }
@@ -42,7 +42,7 @@ export function BackupCard() {
     <section id="backup" className="rounded-2xl border border-line bg-surface p-5">
       <h2 className="font-semibold">Backup &amp; restore</h2>
       <p className="mt-1 text-sm text-muted">
-        Your targets are stored only on this phone. Save a backup file now and then, for example before changing
+        Your targets and expenses are stored only on this phone. Save a backup file now and then, for example before changing
         phones or clearing browser data.
       </p>
       <p className="mt-2 text-xs text-muted">
