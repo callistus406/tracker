@@ -51,13 +51,13 @@ export default function HistoryView() {
   return (
     <div className="space-y-4">
       <h1 className="text-2xl font-semibold">History</h1>
-      <div className="inline-flex rounded-xl border border-line bg-surface p-0.5 text-sm">
+      <div className="flex rounded-xl border border-line bg-surface p-0.5 text-sm sm:inline-flex">
         {(['daily', 'weekly'] as const).map((t) => (
           <button
             key={t}
             onClick={() => setTab(t)}
             aria-pressed={tab === t}
-            className={`rounded-lg px-5 py-2.5 ${tab === t ? 'bg-accent font-medium text-accent-fg' : 'text-muted hover:bg-line/50'}`}
+            className={`min-w-0 flex-1 rounded-lg px-3 py-2.5 sm:flex-none sm:px-5 ${tab === t ? 'bg-accent font-medium text-accent-fg' : 'text-muted hover:bg-line/50'}`}
           >
             {t === 'daily' ? 'Daily' : 'Weekly'}
           </button>

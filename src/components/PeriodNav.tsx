@@ -18,7 +18,7 @@ export function PeriodNav(p: Props) {
   const picker = useRef<HTMLInputElement>(null)
   const btn = 'flex min-h-11 items-center rounded-xl border border-line bg-surface px-3.5 text-sm hover:bg-line/50'
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex flex-wrap items-center gap-2">
       <button onClick={p.onPrev} className={btn} aria-label="Previous"><IconLeft /></button>
       <button onClick={p.onNext} className={btn} aria-label="Next"><IconRight /></button>
       <button

@@ -191,7 +191,7 @@ export function TargetsPage<T extends Target>({ t, adapter, periodKey, noun, hea
       </form>
 
       {t.items.length > 0 && (
-        <div className="flex gap-1">
+        <div className="flex flex-wrap gap-1">
           {tab('all', 'All', t.items.length)}
           {tab('todo', 'To do', todo.length)}
           {tab('done', 'Done', done)}

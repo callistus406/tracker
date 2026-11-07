@@ -203,7 +203,7 @@ export default function SettingsView() {
 
       <section className={card} aria-labelledby="look">
         <h2 id="look" className="font-semibold">Appearance</h2>
-        <div className="mt-3 inline-flex rounded-xl border border-line p-0.5 text-sm">
+        <div className="mt-3 flex rounded-xl border border-line p-0.5 text-sm sm:inline-flex">
           {(['system', 'light', 'dark'] as const).map((t) => (
             <button
               key={t}
@@ -212,7 +212,7 @@ export default function SettingsView() {
                 setTheme(t)
                 applyTheme(t)
               }}
-              className={`rounded-lg px-4 py-2.5 capitalize ${theme === t ? 'bg-accent font-medium text-accent-fg' : 'text-muted hover:bg-line/50'}`}
+              className={`min-w-0 flex-1 rounded-lg px-3 py-2.5 capitalize sm:flex-none sm:px-4 ${theme === t ? 'bg-accent font-medium text-accent-fg' : 'text-muted hover:bg-line/50'}`}
             >
               {t}
             </button>

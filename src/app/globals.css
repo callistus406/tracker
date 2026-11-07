@@ -64,6 +64,13 @@ html {
   -webkit-tap-highlight-color: transparent;
 }
 
+/* The app is built to fit the screen; never let anything pan the page sideways. */
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
 body {
   background: var(--page);
   color: var(--fg);

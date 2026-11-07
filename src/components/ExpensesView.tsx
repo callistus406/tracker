@@ -170,7 +170,7 @@ export default function ExpensesView() {
             value={date}
             onChange={(e) => e.target.value && setDate(e.target.value)}
             aria-label="Date"
-            className="w-36 shrink-0 rounded-xl border border-line bg-surface px-2.5 py-3 text-sm outline-none focus:border-accent"
+            className="w-[42%] min-w-0 max-w-40 rounded-xl border border-line bg-surface px-2.5 py-3 text-sm outline-none focus:border-accent"
           />
         </div>
         <CategoryChips value={category} onChange={setCategory} />
@@ -207,7 +207,7 @@ export default function ExpensesView() {
                 >
                   <span className="flex items-baseline justify-between gap-3 text-sm">
                     <span className="min-w-0 truncate">{CATEGORY_LABEL[c.id]}</span>
-                    <span className="shrink-0 tabular-nums text-muted">
+                    <span className="min-w-0 text-right tabular-nums text-muted wrap-anywhere">
                       {fmt(c.total)} · {Math.round((c.total / total) * 100)}%
                     </span>
                   </span>
@@ -243,7 +243,7 @@ export default function ExpensesView() {
             <section key={g.date} aria-label={formatDay(g.date)}>
               <div className="mb-1.5 flex items-baseline justify-between px-1 text-sm">
                 <h3 className="font-medium">{g.date === today() ? 'Today' : formatDay(g.date)}</h3>
-                <span className="tabular-nums text-muted">{fmt(g.total)}</span>
+                <span className="min-w-0 text-right tabular-nums text-muted wrap-anywhere">{fmt(g.total)}</span>
               </div>
               <ul className="space-y-2">
                 {g.items.map((e) => (
@@ -259,7 +259,7 @@ export default function ExpensesView() {
                         <span className="block truncate font-medium">{e.note || CATEGORY_LABEL[e.category]}</span>
                         <span className="block text-xs text-muted">{CATEGORY_LABEL[e.category]}</span>
                       </span>
-                      <span className="shrink-0 font-semibold tabular-nums">{fmt(e.amount)}</span>
+                      <span className="max-w-[45%] text-right font-semibold tabular-nums wrap-anywhere">{fmt(e.amount)}</span>
                     </button>
                   </li>
                 ))}
